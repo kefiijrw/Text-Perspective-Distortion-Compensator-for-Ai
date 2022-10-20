@@ -1,6 +1,6 @@
 ﻿/*! 
- * Text Perspective Distortion Compensation v.0.0.6
- * Описание: https://github.com/kefiijrw/Text-Perspective-Distortion-Compensation-for-Ai
+ * Text Perspective Distortion Compensator v.0.0.6
+ * https://github.com/kefiijrw/Text-Perspective-Distortion-Compensation-for-Ai
  *
  * Author: Sergey Nikolaev
  * kefiijrw.com
