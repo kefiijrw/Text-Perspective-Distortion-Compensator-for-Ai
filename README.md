@@ -25,13 +25,14 @@
 
 Уровень глаз наблюдателя определяется по линии в слое eyes_level.
 
-![1 Yj4blQokCGikrrrBaw3O1w](https://user-images.githubusercontent.com/8041203/197290620-8e79b048-e156-4971-b496-b2ed1b0fc790.gif)
+![2022-10-31-14 57 37_](https://user-images.githubusercontent.com/8041203/199012228-7b56f9a0-6e3b-4b91-a9ab-ca08dd7a1043.gif)
 
 Скрипт обрабатывает выделенные текстовые поля, а если ничего не выбрано — то все текстовые поля в файле. 
 
 ### Дистанция
 
-![1 - ползунок дистанция](https://user-images.githubusercontent.com/8041203/197290813-c2f89022-4aaf-4a92-9613-bf7eac0dd3c4.gif)
+![2022-10-31 16 37 38](https://user-images.githubusercontent.com/8041203/199022245-74fa1bec-cdf6-41c2-9711-4a056b573f17.gif)
+
 
 Следующие два ползунка отвечают за меру компенсации перспективы и размера. Что
 
@@ -41,7 +42,11 @@
 
 ![2-ползунок компенсации перспективы](https://user-images.githubusercontent.com/8041203/197292120-078989ce-0e74-45dd-8c25-cddb20dfa6ad.gif)
 
+![2022-10-31 23 43 34](https://user-images.githubusercontent.com/8041203/199113319-6c304834-c241-4eb8-afc3-19d58df6bfad.gif)
+
 ### Коэффициент компенсации размера
+
+![2022-11-01 00 38 59](https://user-images.githubusercontent.com/8041203/199118277-b705f088-e9f0-4390-a4f9-f43cc0da7d59.gif)
 
 ![4 - компенсация размера](https://user-images.githubusercontent.com/8041203/197292189-35a4c751-0cd7-4e0f-9b9b-2065d48b9c8c.gif)
 
