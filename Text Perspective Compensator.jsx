@@ -1,11 +1,11 @@
-﻿/*! 
- * Text Perspective Distortion Compensator v.0.0.6
- * https://github.com/kefiijrw/Text-Perspective-Distortion-Compensator-for-Ai
+/*! 
+ * Text Perspective Distortion Compensation v.0.0.7
+ * https://github.com/kefiijrw/Text-Perspective-Distortion-Compensation-for-Ai
  *
  * Author: Sergey Nikolaev
  * kefiijrw.com
  *
- * Date: 2022-10-19
+ * Date: 2022-11-02
  *
  */
 
@@ -14,7 +14,7 @@
 var ui = true;
 
 //do we write in the log file
-var debug_mode = true;
+var debug_mode = false;
 
 // ratio millimeters to points
 var mm = 2.834645;
@@ -42,7 +42,15 @@ var leading_coeff = 0;
 // eye level of the viewer, determine by the line in the eyes_level layer, converted to cm
 var eyes_level;
 
+// How to make the script increase the vertical scale of the letters:
+// true – letters grows only upwards to keep their baselines in place
+// false – letters grows in both directions - up and down - and generally stays in its place
+var keep_baseline = false;
 
+// when the script runs when nothing is selected:
+// false – alert warning
+// true – process all text fields
+var all_text = true;
 
 // Working with current documents
 var doc = app.activeDocument;
@@ -147,6 +155,101 @@ function GotoLink(url) {
 
 
 
+/*
+
+  CONFIG OPERATION FUNCTIONS
+
+*/
+
+
+
+// Read presets from illustrator settings
+function init_configs() {
+   echo('init_configs');
+
+   //flag in the illustrator settings saying that the script has already been run before
+   var was = app.preferences.getIntegerPreference('perspective_compensation_script_first_launch_already_was');
+
+   if (was != 6) { //very dumb, sorry. it didn't work to save boolean so 6 is true and 2 is false
+
+      //first launch
+      echo('first_launch!');
+
+      //save these values in illustrator settings
+      from_vars_to_prefs();
+
+      //remember that first launch was
+      app.preferences.setIntegerPreference('perspective_compensation_script_first_launch_already_was', 6);
+
+
+   } else {
+
+      echo('not first launch');
+
+      //not first launch
+      //read script settings from illustrator settings
+      from_prefs_to_vars();
+
+   }
+
+}
+
+// saving current state (coefficients, presets, checkboxes) to the illustrator settings, so they can be recovered again after restarting the illustrator
+
+function from_vars_to_prefs() {
+
+   echo('from_vars_to_prefs ');
+
+   app.preferences.setRealPreference('perspective_compensation_script_current_distance', distance);
+
+   app.preferences.setRealPreference('perspective_compensation_script_current_perspective_coeff', perspective_coeff);
+   
+   app.preferences.setRealPreference('perspective_compensation_script_current_scale_coeff', scale_coeff);
+   
+   app.preferences.setRealPreference('perspective_compensation_script_current_leading_coeff', leading_coeff);
+
+}
+
+
+//opposite, restoring the state of the script from the saved illustrator settings
+
+function from_prefs_to_vars() {
+   echo('from_prefs_to_vars');
+
+   distance = app.preferences.getRealPreference('perspective_compensation_script_current_distance');
+
+   perspective_coeff = app.preferences.getRealPreference('perspective_compensation_script_current_perspective_coeff');
+
+   scale_coeff = app.preferences.getRealPreference('perspective_compensation_script_current_scale_coeff');
+
+   leading_coeff = app.preferences.getRealPreference('perspective_compensation_script_current_leading_coeff');
+
+}
+
+
+
+//full reset, as if the script had never been run before
+function factory_reset() {
+   echo('factory_reset');
+
+   app.preferences.removePreference('perspective_compensation_script_first_launch_already_was');
+
+   app.preferences.removePreference('perspective_compensation_script_current_distance');
+   app.preferences.removePreference('perspective_compensation_script_current_perspective_coeff');
+   app.preferences.removePreference('perspective_compensation_script_current_scale_coeff');
+   app.preferences.removePreference('perspective_compensation_script_current_leading_coeff');
+
+}
+
+
+
+
+
+
+
+
+
+
 
 
 /*
@@ -159,14 +262,27 @@ function GotoLink(url) {
 
 
 // root function
-function main(where) {
+function main() {
    echo('=====================================');
    echo('main with settings ' + distance + '; ' + perspective_coeff + '; ' + scale_coeff + '; ' + leading_coeff);
+
+   var where;
    
    // determining eye level
    try{
 
-      eyes_level = (-doc.layers.getByName('eyes_level').pathItems[0].top) / (10 * mm);
+
+      if(doc.layers.getByName('eyes_level').pathItems.length > 0){
+
+         var obj = doc.layers.getByName('eyes_level').pathItems[0];
+
+      } else if( doc.layers.getByName('eyes_level').groupItems.length > 0){
+
+         var obj = doc.layers.getByName('eyes_level').groupItems[0].pathItems[0];         
+
+      } 
+
+      eyes_level = (-obj.top) / (10 * mm);
 
    } catch(err){
 
@@ -177,17 +293,26 @@ function main(where) {
 
 
    //which text fields we process
-   if (where == undefined) {
+   if (doc.selection.length > 0) {
+
       where = doc.selection;
+
+   } else {
+
+      if(all_text){
+
+         where = doc.textFrames;
+
+      } else{
+
+         alert(loc({'en':'Nothing selected\nSelect text fields and run the script again', 'ru':'Ничего не выделено\nВыделите текстовые объекты и запустите скрипт снова'}));
+
+         return false;
+
+      }
+
    }
 
-   if (where.length == 0) {
-
-      alert(loc({'en':'Nothing selected\nSelect text fields and run the script again', 'ru':'Ничего не выделено\nВыделите текстовые объекты и запустите скрипт снова'}));
-
-      return false;
-
-   }
 
    //recursive walkover of the selection and processing of text fields within it
    //get the number of processed text fields
@@ -351,10 +476,10 @@ function compensate_text(txt) {
          for (var i = 0; i < par.lines.length; i++) {
 
             var line = par.lines[i];
-            echo(' ');
-            echo(' ');
-            echo('   >line ' + i + ': ' + line.contents);
-            echo('   >line len is ' + line.characters.length);
+            // echo(' ');
+            // echo(' ');
+            // echo('   >line ' + i + ': ' + line.contents);
+            // echo('   >line len is ' + line.characters.length);
             
 
             // process this line, in response we get an updated y-coordinate, 
@@ -362,8 +487,8 @@ function compensate_text(txt) {
             
             y = compensate_line(par, i, i + j == 0, y);
             
-            echo('   >new line len is ' + par.lines[i].length);
-            echo('   >new line is ' + par.lines[i].contents);
+            // echo('   >new line len is ' + par.lines[i].length);
+            // echo('   >new line is ' + par.lines[i].contents);
 
          }
          // echo('end of paragraph' +y);
@@ -468,7 +593,7 @@ function compensate_text(txt) {
  */
 function compensate_line(txt, line_n, is_first_line, y) {
    
-   echo('====compensate_line');
+   // echo('====compensate_line');
 
    var line = txt.lines[line_n];
 
@@ -521,8 +646,8 @@ function compensate_line(txt, line_n, is_first_line, y) {
    for (var i = 0; i < cicle_count; i++) {
 
       
-      echo(' ');
-      echo('      trying ' + (i+1) + ', calculate for y = ' + y);
+      // echo(' ');
+      // echo('      trying ' + (i+1) + ', calculate for y = ' + y);
 
       //we apply the distortions and get a new line leading in response
       
@@ -532,7 +657,7 @@ function compensate_line(txt, line_n, is_first_line, y) {
       //if it is not the first line of the first paragraph
       if (!is_first_line) {
 
-         echo('      new_leading = ' + new_leading);
+         // echo('      new_leading = ' + new_leading);
 
          /**
           * Correct the [y] coordinate by the difference between the previous 
@@ -542,7 +667,7 @@ function compensate_line(txt, line_n, is_first_line, y) {
 
       } else {
 
-         echo('      ITS first line, ignore leading changes');
+         // echo('      ITS first line, ignore leading changes');
 
       }
 
@@ -655,14 +780,14 @@ function calc_line(txt, line_n, y, original_leading, iteration) {
     * so that it is in the same dimensionality 
     * as distance and eye_level
     */
-   var y_in_sm = -y / (10 * mm);
+   var y_in_cm = -y / (10 * mm);
 
 
    /**
     * Calculate the compression ratio by the distance of the line from eye level.
     * y_comp ranges from 1 (no distortion) to infinity (super distortion)
     */
-   var y_comp = compensation(Math.abs(y_in_sm - eyes_level));
+   var y_comp = compensation(Math.abs(y_in_cm - eyes_level));
    
 
    /**
@@ -673,12 +798,12 @@ function calc_line(txt, line_n, y, original_leading, iteration) {
    var y_perspective_coeff = (y_comp - 1) * perspective_coeff + 1;
    var y_scale_coeff       = (y_comp - 1) * scale_coeff + 1;
 
-   echo('y_in_sm: '+y_in_sm);
-   echo('eyes_level: '+eyes_level);
-   echo('d: '+Math.abs(y_in_sm - eyes_level));
-   echo('coef: '+y_comp);
-   echo('y_perspective_coeff: '+y_perspective_coeff);
-   echo('y_scale_coeff: '+y_scale_coeff);
+   // echo('y_in_cm: '+y_in_cm);
+   // echo('eyes_level: '+eyes_level);
+   // echo('d: '+Math.abs(y_in_cm - eyes_level));
+   echo('coef: '+y_comp.toFixed(2));
+   // echo('y_perspective_coeff: '+y_perspective_coeff);
+   // echo('y_scale_coeff: '+y_scale_coeff);
 
    
    
@@ -718,7 +843,7 @@ function set_hor_scale(line, y_perspective_coeff, scale_coeff, txt, line_n){
    // echo('>>>' + line.start + ' -> ' + line.end);
 
    
-   echo('horizontalScale: ' + hor_scale_compensated);
+   // echo('horizontalScale: ' + hor_scale_compensated);
 
    //If it is a Point text
    if(current_txt.kind == TextType.POINTTEXT){
@@ -886,17 +1011,20 @@ function set_vert_scale(line, y_perspective_coeff, y_scale_coeff){
    if( line.characterAttributes.verticalScale != vert_scale){
       line.characterAttributes.verticalScale = vert_scale;
    }
+
+   echo('vScale: ' + vert_scale.toFixed(2));
    
-   // consider how much vertically to drop the text, so that the line grows not upwards, but in both directions and generally stays in its place when you increase the vertical scale
-   var shift_in_percents = (vert_scale - 100)/2;
-   var shift_in_points = line.characterAttributes.size*shift_in_percents/100;
-   line.characterAttributes.baselineShift = -shift_in_points/2;
+   if(!keep_baseline){
+      // consider how much vertically to drop the text, so that the line grows not upwards, but in both directions and generally stays in its place when you increase the vertical scale
+      var shift_in_percents = (vert_scale - 100)/2;
+      var shift_in_points = line.characterAttributes.size*shift_in_percents/100;
+      line.characterAttributes.baselineShift = -shift_in_points/2;
 
-   echo('verticalScale: ' + vert_scale);
-   echo('shift_in_percents: ' + shift_in_percents);
-   echo('shift_in_points: ' + shift_in_points);
-   echo('baselineShift: ' + line.characterAttributes.baselineShift);
-
+      
+      echo('shift_in_percents: ' + shift_in_percents);
+      echo('shift_in_points: ' + shift_in_points);
+      echo('baselineShift: ' + line.characterAttributes.baselineShift);
+   }
    
 }
 
@@ -946,7 +1074,9 @@ function compensation(y_coord) {
     * the plane to get a dimensionless value from 1 (no distortion) 
     * to infinity (very high distortion)
     */
-    echo('sqrt('+distance+'(distance)**2 + '+ y_coord+'(y_coord)**2)/'+distance+'(distance)');
+    // echo('sqrt('+distance+'(distance)**2 + '+ y_coord+'(y_coord)**2)/'+distance+'(distance)');
+    echo('dist = '+(Math.sqrt(distance * distance + y_coord * y_coord)).toFixed(2)+' cm');
+    echo('angle = '+((180/Math.PI)*Math.atan(y_coord/distance)).toFixed(2)+' °');
    var coef_y = Math.sqrt(distance * distance + y_coord * y_coord) / distance;
    
    return coef_y;
@@ -967,6 +1097,10 @@ function compensation(y_coord) {
 function actionOK() {
    
    echo('actionOK');
+
+   // Store the used values for the next startup 
+   from_vars_to_prefs();
+
 
    /**
     * Since the script is executed in preview mode, 
@@ -1003,6 +1137,7 @@ function settings_updated() {
    perspective_coeff = settings.perspPnl.slide.value;
    scale_coeff       = settings.scalePnl.slide.value;
    leading_coeff     = settings.leadPnl.slide.value;
+
 
    // recalculate
    app.undo();
@@ -1097,13 +1232,13 @@ function build_ui(){
    dlg.distPnl.slide = dlg.distPnl.add('slider', undefined, distance, 50, 500);   //слайдер
    dlg.distPnl.slide.preferredSize.width = s_w;
 
-   dlg.distPnl.sm_g = dlg.distPnl.add('group', undefined, 'so');   //слайдер
-   dlg.distPnl.sm_g.spacing = 4;
+   dlg.distPnl.cm_g = dlg.distPnl.add('group', undefined, 'so');   //слайдер
+   dlg.distPnl.cm_g.spacing = 4;
 
-   dlg.distPnl.titleEt = dlg.distPnl.sm_g.add('edittext', undefined, distance); //ипнут
+   dlg.distPnl.titleEt = dlg.distPnl.cm_g.add('edittext', undefined, Math.round(distance)); //ипнут
    dlg.distPnl.titleEt.preferredSize.width = ti_w;
 
-   dlg.distPnl.titleSt = dlg.distPnl.sm_g.add('statictext', undefined, loc({'ru':'см', 'en':'cm'})); //размерность
+   dlg.distPnl.titleSt = dlg.distPnl.cm_g.add('statictext', undefined, loc({'ru':'см', 'en':'cm'})); //размерность
    // dlg.distPnl.titleEt.preferredSize.width = 20; 
    dlg.distPnl.titleSt.helpTip = loc({'ru':'сантиметров', 'en':'centimeters'});
 
@@ -1111,40 +1246,40 @@ function build_ui(){
 
 
    // perspective_coeff
-   dlg.perspPnl = dlg.add('panel', undefined, loc({'ru':'Коэффициент компенсации перспективы', 'en':'Perspective compensation coefficient'}));
+   dlg.perspPnl = dlg.add('panel', undefined, loc({'ru':'Компенсация перспективы', 'en':'Perspective compensation'}));
    dlg.perspPnl.orientation = 'row';
    dlg.perspPnl.preferredSize.width = w - d_w;
    dlg.perspPnl.margins = 10;
 
    dlg.perspPnl.slide = dlg.perspPnl.add('slider', undefined, perspective_coeff, 0, 1);//слайдер
    dlg.perspPnl.slide.preferredSize.width = s_w;
-   dlg.perspPnl.titleEt = dlg.perspPnl.add('edittext', undefined, perspective_coeff);//инпут
+   dlg.perspPnl.titleEt = dlg.perspPnl.add('edittext', undefined, roundOff(perspective_coeff) );//инпут
    dlg.perspPnl.titleEt.preferredSize.width = ti_w;
 
 
 
    // scale_coeff
-   dlg.scalePnl = dlg.add('panel', undefined, loc({'ru':'Коэффициент компенсации размера', 'en':'Scale compensation coefficient'}));
+   dlg.scalePnl = dlg.add('panel', undefined, loc({'ru':'Компенсация размера', 'en':'Size compensation'}));
    dlg.scalePnl.orientation = 'row';
    dlg.scalePnl.preferredSize.width = w - d_w;
    dlg.scalePnl.margins = 10;
 
    dlg.scalePnl.slide = dlg.scalePnl.add('slider', undefined, scale_coeff, 0, 1);
    dlg.scalePnl.slide.preferredSize.width = s_w;
-   dlg.scalePnl.titleEt = dlg.scalePnl.add('edittext', undefined, scale_coeff);
+   dlg.scalePnl.titleEt = dlg.scalePnl.add('edittext', undefined, roundOff(scale_coeff) );
    dlg.scalePnl.titleEt.preferredSize.width = ti_w;
 
 
 
    // leading_coeff
-   dlg.leadPnl = dlg.add('panel', undefined, loc({'ru':'Коэффициент сохранения интерлиньяжа', 'en':'Leading compensation coefficient'}));
+   dlg.leadPnl = dlg.add('panel', undefined, loc({'ru':'Cохранение интерлиньяжа', 'en':'Leading compensation'}));
    dlg.leadPnl.orientation = 'row';
    dlg.leadPnl.preferredSize.width = w - d_w;
    dlg.leadPnl.margins = 10;
 
    dlg.leadPnl.slide = dlg.leadPnl.add('slider', undefined, leading_coeff, 0, 1);
    dlg.leadPnl.slide.preferredSize.width = s_w;
-   dlg.leadPnl.titleEt = dlg.leadPnl.add('edittext', undefined, leading_coeff);
+   dlg.leadPnl.titleEt = dlg.leadPnl.add('edittext', undefined, roundOff(leading_coeff) );
    dlg.leadPnl.titleEt.preferredSize.width = ti_w;
 
 
@@ -1224,6 +1359,8 @@ if (debug_mode) {
 echo('start!');
 echo(app.locale);
 
+// factory_reset();
+init_configs();
 
 var settings = build_ui();
 
@@ -1233,6 +1370,7 @@ if(so){
    app.redraw();
 
    if (ui){
+      echo('show');
       settings.show();
    }
 
