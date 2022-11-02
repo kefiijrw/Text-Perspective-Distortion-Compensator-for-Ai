@@ -1,67 +1,93 @@
 # Text Perspective Distortion Compensator for Adobe Illustrator
 
-Скрипт для Иллюстратора точечно модифицирует пропорций и размеры букв, улучшая читабельность плотных макетов с мелкими надписи, на которые зритель будет смотреть под углом. Обычно это размещенные высоко табло в аэропортах и вокзалах, меню над барной стойкой, навигационные носители и т.д.
+![perspective_compensation_before_and_after_long_title_un](https://user-images.githubusercontent.com/8041203/197288727-b58de5c4-8d54-4a9b-a8ce-a4c7fac977f2.png)
+
+The script for Adobe Illustrator tweaks the proportions and sizes of the letters, improving the readability of the text that the audience will be looking at from an angle. This is especially critical for dense layouts with small letters: high-mounted signage in airports and train stations, menus over the bar, wayfinding materials, etc.
 
 ![frame](https://user-images.githubusercontent.com/8041203/197364496-860a54fd-02ab-4616-986c-b9fb6564cd3b.jpg)
 
-Принцип работы: скрипту передается положение макета относительно некоторого усредненного положения глаз наблюдателя, скрипт рассчитывает перспективные искажения каждой строки текста и компенсирует их растягиванием и увеличением символов, таким образом улучшая читабельность текста. Как-то так:
-
-Ему задается положение макета относительно глаз наблюдающего, и он для каждой строки определяет
+The script gets the position of the layout relative to some average observer's eye position, calculates the perspective distortion of each line of text, and compensates for it by stretching and enlarging the characters, thus improving the readability of the text.
 
 ![en_4k_0 5_16c_new_black](https://user-images.githubusercontent.com/8041203/197365202-0fd3a9f1-3344-4b38-b3fd-e0982bf80b34.gif)
 
-![perspective_compensation_before_and_after_long_title_un](https://user-images.githubusercontent.com/8041203/197288727-b58de5c4-8d54-4a9b-a8ce-a4c7fac977f2.png)
 
-Скрипт также умеет компенсировать интерлиньяж, сохранять пропорции символов и другие штуки. Поддерживаются и Area Type, и Point Type, но у них есть особенности, о которых ниже. 
-
-
-## Параметры скрипта
-остальные параметры выставляются в открывающейся панели настроек
-
-![Screenshot 2022-10-23 at 16 07 copy](https://user-images.githubusercontent.com/8041203/197394432-c13cf4a9-5fb7-4069-9e15-a87eae2f04d7.png)
+The script also knows how to compensate for leading and the smallness of far lines, and maintain the proportions of characters. Both `Area Type` and `Point Type` are supported, but they have special aspects, which are described below.
 
 
-### Уровень глаз
+## Script Settings: layout position
 
-Уровень глаз наблюдателя определяется по линии в слое eyes_level.
+The position of the layout relative to the observer's eyes is determined by two parameters: the position of the layout relative to the eye level and the distance from the plane of the media to the eyes.
 
-![2022-10-31-14 57 37_](https://user-images.githubusercontent.com/8041203/199012228-7b56f9a0-6e3b-4b91-a9ab-ca08dd7a1043.gif)
+![Screenshot 2022-11-02 at 14 05 49](https://user-images.githubusercontent.com/8041203/199474701-844e8efc-3455-4202-9e4c-a659b80041f0.png)
 
-Скрипт обрабатывает выделенные текстовые поля, а если ничего не выбрано — то все текстовые поля в файле. 
+The observer's eye level is determined by the line in the `eyes_level` layer, and the `distance` is set in the script settings panel.
 
-### Дистанция
+![2022-11-01 18 13 05](https://user-images.githubusercontent.com/8041203/199302426-a56a7dd2-4d22-4357-8a10-a603d3164d9f.gif)
 
-![2022-10-31 16 37 38](https://user-images.githubusercontent.com/8041203/199022245-74fa1bec-cdf6-41c2-9711-4a056b573f17.gif)
+The shorter the distance, the greater the distortion, and the stronger the effect of their compensation. 
+
+By default, the script assumes that the layout is already at 100% scale. If it becomes crowded on the canvas, you can reduce the layout simultaneously with a multiple of the distance parameter. For example, instead of a 5×5 meter layout with a distance of 10 meters, you can run the script on a 1×1 meter layout with a distance of 2 meters, and the result will be identical.
 
 
-Следующие два ползунка отвечают за меру компенсации перспективы и размера. Что
+## Script Settings: compensation coefficients
+
+The other three sliders on the settings panel are responsible for the compensation coefficients.
+
+<img width="438" alt="Screenshot 2022-10-28 at 00 36 54" src="https://user-images.githubusercontent.com/8041203/199521264-edcf9e5a-2b25-45ba-9f01-98951f71a601.png">
+
+Characters on lines above eye level not only optically squeeze vertically due to perspective distortion, but also look smaller than characters on lower lines due to the fact that they are further away from the eye. Therefore, the script has two separate parameters: `perspective compensation` and `size compensation`. The picture can help to understand the difference between the two types of optical compensation:
 
 ![2d-for-ae-2-1500-20fps-8c](https://user-images.githubusercontent.com/8041203/197311413-e4dbb8fd-4a30-48ed-87a3-4de976f5f4ee.gif)
 
-### Коэффициент компенсации искажений
+### Perspective compensation
 
-![2-ползунок компенсации перспективы](https://user-images.githubusercontent.com/8041203/197292120-078989ce-0e74-45dd-8c25-cddb20dfa6ad.gif)
+Responsible for stretching the letters vertically to counterbalance their optical squeeze due to viewing at an angle. 
+
+0 — off
+
+1 — full compensation, from a specified distance all characters will optically look in their original proportions
 
 ![2022-10-31 23 43 34](https://user-images.githubusercontent.com/8041203/199113319-6c304834-c241-4eb8-afc3-19d58df6bfad.gif)
+![Asset 1-persp_max copy 2](https://user-images.githubusercontent.com/8041203/199505008-f5f0f6ca-c184-4051-b0d4-443ac7acfa24.png)
 
-### Коэффициент компенсации размера
+### Size compensation
+
+Responsible for simply increasing the size of the letters without changing their proportions to counterbalance their smaller optical size.
+
+0 — off
+
+1 — letters will enlarge in proportional to the distance to the eye, compensating for the difference in optical size of characters from different lines
 
 ![2022-11-01 00 38 59](https://user-images.githubusercontent.com/8041203/199118277-b705f088-e9f0-4390-a4f9-f43cc0da7d59.gif)
+![Asset 1-size_max copy 2](https://user-images.githubusercontent.com/8041203/199504979-752800fe-8185-4af9-a994-75312bd56520.png)
 
-![4 - компенсация размера](https://user-images.githubusercontent.com/8041203/197292189-35a4c751-0cd7-4e0f-9b9b-2065d48b9c8c.gif)
+This option can significantly change the layout: when processing an Area Type text field, letters that have increased in width may no longer fit into the fixed line width and will be moved to a new line. When processing Point Type, the lines are simply extended:
 
-этот параметр работает по-разному для Point Type и Area Type:
+![Screenshot 2022-11-01 at 13 31 20](https://user-images.githubusercontent.com/8041203/199217036-b7c224f2-a7a5-4780-8b8f-5a3c6a9a36df.png)
 
-![5 - различие при обработкe area type и point type](https://user-images.githubusercontent.com/8041203/197292276-1ee4e953-66e5-47c6-b4b6-7ef5e04d72bd.gif)
+### Leading compensation
 
-### Cохранения интерлиньяжа
+0 — leading remains unchanged
 
-![6 - коэффициент интерлиньяжа](https://user-images.githubusercontent.com/8041203/197294453-5061d55a-20bc-49a9-8794-6d3f39c7330f.gif)
+1 — leading is proportional to the height of the characters
+
+Stretching letters without leading compensation may cause lines to stick together, but increasing the leading will cause the lines to shift on the layout.
+
+![2022-11-01 23 50 07](https://user-images.githubusercontent.com/8041203/199339105-d98999a8-2e28-4df3-9a65-2aaaba930a73.gif)
+![Asset 1-leading_max copy 2](https://user-images.githubusercontent.com/8041203/199504927-da29a864-4d3c-4672-a303-085e8dedfa8a.png)
 
 
 ## Рекомендации по применению
+
+Если шикануть и выкрутить все ползунки на максимум, можно получить полную компенсацию: оптически размер букв и интерлиньяж будут одинаковым для всех строк.
+
+Скрипт обрабатывает выделенные текстовые поля, а если ничего не выбрано — то все текстовые поля в файле. 
+
 ![1 NviNPutzBP2_-z4tXUNr0g](https://user-images.githubusercontent.com/8041203/197294538-cba6b7cd-5796-4d4a-a185-2930b9840d5a.gif)
 
+Но делать так вряд ли стоит. Скрипт рассчитывает компенсацию искажения для определенной дистанции и не вызывает вопросов только у наблюдателя с этого ракурса, а с другой позиции макет уже будет смотреться крипово и будто бы поломанным. Примерно как в истории с компенсацией перспективных искажений нанесенных на дорогу знаков.
+
+Поэтому я рекомендую использовать ползунки коэффициентов аккуратно и особо не гонять их дальше середины, чтобы внесенные скриптом изменения в макет были полезны, но не бросались в глаза, обитали в области оптических компенсаций.
 
 ![1 2sO2lBul8YeOq8Ojbtmj0w](https://user-images.githubusercontent.com/8041203/197294542-985e373a-7fe9-4b1b-84a1-a12f94934b27.gif)
 
