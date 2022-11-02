@@ -77,18 +77,14 @@ Stretching letters without leading compensation may cause lines to stick togethe
 ![Asset 1-leading_max copy 2](https://user-images.githubusercontent.com/8041203/199504927-da29a864-4d3c-4672-a303-085e8dedfa8a.png)
 
 
-## Рекомендации по применению
+## Recommendations for use
 
-Если шикануть и выкрутить все ползунки на максимум, можно получить полную компенсацию: оптически размер букв и интерлиньяж будут одинаковым для всех строк.
-
-Скрипт обрабатывает выделенные текстовые поля, а если ничего не выбрано — то все текстовые поля в файле. 
+If you go crazy and turn all the sliders to maximum, you can get full compensation: optically, the size of the letters and the spacing will be the same for all lines.
 
 ![1 NviNPutzBP2_-z4tXUNr0g](https://user-images.githubusercontent.com/8041203/197294538-cba6b7cd-5796-4d4a-a185-2930b9840d5a.gif)
 
-Но делать так вряд ли стоит. Скрипт рассчитывает компенсацию искажения для определенной дистанции и не вызывает вопросов только у наблюдателя с этого ракурса, а с другой позиции макет уже будет смотреться крипово и будто бы поломанным. Примерно как в истории с компенсацией перспективных искажений нанесенных на дорогу знаков.
-
-Поэтому я рекомендую использовать ползунки коэффициентов аккуратно и особо не гонять их дальше середины, чтобы внесенные скриптом изменения в макет были полезны, но не бросались в глаза, обитали в области оптических компенсаций.
+But it is probably not a good idea. The script calculates compensation for a certain distance, and the resulting layout looks good only from this angle. From another position the layout will already look creepy and broken.
 
 ![1 2sO2lBul8YeOq8Ojbtmj0w](https://user-images.githubusercontent.com/8041203/197294542-985e373a-7fe9-4b1b-84a1-a12f94934b27.gif)
 
-
+This is why I recommend using the coefficient sliders carefully and not moving them much farther than the middle. Then the changes made by the script will be useful, but will not be eye-catching, remaining little-noticeable optical compensations.
